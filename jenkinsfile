@@ -1,0 +1,49 @@
+pipeline{
+    agent any
+    tools{
+        jdk 'jdk17'
+        nodejs 'node16'
+    }
+
+    stages {
+        stage('clean workspace'){
+            steps{
+                cleanWs()
+            }
+        }
+        stage('Checkout from Git'){
+            steps{
+                git branch: 'main', url: 'https://github.com/Aj7Ay/Netflix-clone.git'
+            }
+        }
+        
+        
+        stage('Install Dependencies') {
+            steps {
+                sh "npm install"
+            }
+        }
+        
+        
+        stage("Docker Build & Push"){
+            steps{
+                script{
+                   withDockerRegistry(credentialsId: 'docke-cred'){   
+                       sh "docker build --build-arg TMDB_V3_API_KEY=38c15500cc643b6c5498eb118b36cb2f -t netflix ."
+                       sh "docker tag netflix amuldark/netflix:latest "
+                       sh "docker push amuldark/netflix:latest "
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy to container'){
+            steps{
+                sh 'docker run -d --name netflix -p 8081:80 --name=groot amuldark/netflix:latest'
+            }
+        }
+
+     
+
+}
+}
